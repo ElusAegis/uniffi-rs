@@ -14,6 +14,7 @@ use std::{
     hash::{Hash, Hasher},
     process::{Command, Stdio},
 };
+use std::env::var;
 
 // A source to compile for a test
 #[derive(Debug)]
@@ -155,13 +156,20 @@ fn get_cargo_metadata() -> Metadata {
 }
 
 fn get_cargo_build_messages() -> Vec<Message> {
-    let mut child = Command::new(env!("CARGO"))
-        .arg("build")
-        .arg("--message-format=json")
+    let mut command = Command::new(env!("CARGO"));
+    command.arg("build").arg("--message-format=json");
+
+    if let Ok(extra_args) = var("UNIFFI_CARGO_BUILD_EXTRA_ARGS") {
+        command.args(extra_args.split_whitespace());
+    }
+
+    let child = command
         .stdout(Stdio::piped())
         .spawn()
         .expect("Error running cargo build");
-    let output = std::io::BufReader::new(child.stdout.take().unwrap());
+
+    let output = std::io::BufReader::new(child.stdout.expect("Failed to get stdout"));
+
     Message::parse_stream(output)
         .map(|m| m.expect("Error parsing cargo build messages"))
         .collect()

@@ -18,5 +18,5 @@ uniffi = { workspace = true, features = ["bindgen-tests"] }
 
 
 [features]
-default = ["optional"]
+#default = ["optional"]
 optional = []
